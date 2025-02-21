@@ -2,6 +2,7 @@
 #define BRAINFUCK_H
 
 #include <stddef.h>
+#include <stdio.h>
 #define BRAINFUCK_TAPE_SIZE 30000
 
 #define BRAINFUCK_EOF_BEHAVIOUR 1
@@ -55,6 +56,10 @@ BrainfuckInstruction *brainfuck_add_first(BrainfuckState *state,
 BrainfuckInstruction *
 brainfuck_insert_before(BrainfuckState *state,
                         BrainfuckInstruction *instruction);
+
+BrainfuckInstruction *brainfuck_parse_stream(FILE *stream);
+BrainfuckInstruction *brainfuck_parse_stream_until(FILE *stream,
+                                                   const int until);
 
 void brainfuck_destroy_instruction(BrainfuckInstruction *instruction);
 void brainfuck_destroy_instructions(BrainfuckInstruction *root);

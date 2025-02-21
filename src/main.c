@@ -18,6 +18,7 @@ int run_file(FILE *file) {
     brainfuck_destroy_state(state);
     return EXIT_FAILURE;
   }
+  brainfuck_add(state, brainfuck_parse_stream(file));
   return EXIT_SUCCESS;
 }
 
