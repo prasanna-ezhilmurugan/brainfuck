@@ -19,11 +19,19 @@ int run_file(FILE *file) {
     return EXIT_FAILURE;
   }
   brainfuck_add(state, brainfuck_parse_stream(file));
+  brainfuck_execute(state->root, context);
+  brainfuck_destroy_context(context);
+  brainfuck_destroy_state(state);
+  fclose(file);
   return EXIT_SUCCESS;
 }
 
 int main() {
   // printf("brainfuck");
   print_usage("brianfuck");
+  if (run_file(fopen("./examples/text-generator.bf", "r")) == EXIT_FAILURE) {
+    fprintf(stderr, "error: failed to read file.");
+    return EXIT_FAILURE;
+  }
   return 0;
 }

@@ -1,11 +1,30 @@
 #include <brainfuck.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 
+void brainfuck_print_instruction(BrainfuckInstruction *root) {
+  BrainfuckInstruction *iter = root;
+  while (iter != NULL) {
+    printf("%c , %d\n", iter->type, iter->difference);
+    iter = iter->next;
+  }
+}
+
+BrainfuckInstruction *brainfuck_instruction() {
+  BrainfuckInstruction *instruction =
+      (BrainfuckInstruction *)malloc(sizeof(BrainfuckInstruction));
+  instruction->difference = 0;
+  instruction->next = NULL;
+  instruction->previous = NULL;
+  instruction->loop = NULL;
+  return instruction;
+}
+
 BrainfuckState *brainfuck_state() {
   BrainfuckState *state = (BrainfuckState *)malloc(sizeof(BrainfuckState));
-  state->root = 0;
-  state->head = 0;
+  state->root = NULL;
+  state->head = NULL;
   return state;
 }
 
@@ -29,16 +48,37 @@ BrainfuckExecutionContext *brainfuck_context(int size) {
   return context;
 }
 
+BrainfuckInstruction *brainfuck_add(BrainfuckState *state,
+                                    BrainfuckInstruction *instruction) {
+  if (state == NULL || instruction == NULL) {
+    return NULL;
+  }
+  instruction->previous = state->head;
+  if (state->head != NULL) {
+    state->head->next = instruction;
+  }
+  BrainfuckInstruction *iter = instruction;
+  while (iter != NULL) {
+    if (iter->next != NULL) {
+      state->head = iter;
+      break;
+    }
+    iter = iter->next;
+  }
+  if (state->root == NULL) {
+    state->root = instruction;
+  }
+  brainfuck_print_instruction(state->root);
+  return state->head;
+}
+
 BrainfuckInstruction *brainfuck_parse_stream(FILE *stream) {
   return brainfuck_parse_stream_until(stream, EOF);
 }
 
 BrainfuckInstruction *brainfuck_parse_stream_until(FILE *stream,
                                                    const int until) {
-  BrainfuckInstruction *instruction =
-      (BrainfuckInstruction *)malloc(sizeof(BrainfuckInstruction));
-  instruction->next = 0;
-  instruction->loop = 0;
+  BrainfuckInstruction *instruction = brainfuck_instruction();
   BrainfuckInstruction *root = instruction;
   char ch;
   char temp;
@@ -88,13 +128,11 @@ BrainfuckInstruction *brainfuck_parse_stream_until(FILE *stream,
     default:
       continue;
     }
-    instruction->next =
-        (BrainfuckInstruction *)malloc(sizeof(BrainfuckInstruction));
-    instruction->next->next = 0;
-    instruction->next->loop = 0;
+    instruction->next = brainfuck_instruction();
     instruction = instruction->next;
   }
   instruction->type = BRAINFUCK_TOKEN_LOOP_END;
+  instruction->difference = 1;
   return root;
 }
 
@@ -103,7 +141,7 @@ void brainfuck_destroy_instruction(BrainfuckInstruction *instruction) {
     return;
   }
   free(instruction);
-  instruction = 0;
+  instruction = NULL;
 }
 
 void brainfuck_destroy_instructions(BrainfuckInstruction *root) {
@@ -121,18 +159,87 @@ void brainfuck_destroy_state(BrainfuckState *state) {
     return;
   }
   brainfuck_destroy_instructions(state->root);
-  state->root = 0;
-  state->head = 0;
+  state->root = NULL;
+  state->head = NULL;
   free(state);
-  state = 0;
+  state = NULL;
 }
 
 void brainfuck_destroy_context(BrainfuckExecutionContext *context) {
-  free(context->tape);
-  free(context);
-  context = 0;
+  if (context->tape != NULL) {
+    free(context->tape);
+  }
+  if (context != NULL) {
+    free(context);
+  }
+  context = NULL;
 }
 
+void brainfuck_execute(BrainfuckInstruction *root,
+                       BrainfuckExecutionContext *context) {
+  if (root == NULL || context == NULL) {
+    return;
+  }
+  BrainfuckInstruction *instruction = root;
+  int index;
+  while (instruction != NULL && instruction->type == BRAINFUCK_TOKEN_LOOP_END) {
+    switch (instruction->type) {
+    case BRAINFUCK_TOKEN_PLUS:
+      context->tape[context->tape_index] += instruction->difference;
+      break;
+    case BRAINFUCK_TOKEN_MINUS:
+      context->tape[context->tape_index] -= instruction->difference;
+      break;
+    case BRAINFUCK_TOKEN_NEXT:
+      if (instruction->difference >= INT_MAX - (long)context->tape_size ||
+          (long)context->tape_index + instruction->difference >=
+              (long)context->tape_size) {
+        fprintf(stderr, "error: tape memory out of bounds");
+        exit(EXIT_FAILURE);
+      }
+      context->tape_index += instruction->difference;
+      break;
+    case BRAINFUCK_TOKEN_PREVIOUS:
+      if (instruction->difference >= INT_MAX - (long)context->tape_size ||
+          (long)context->tape_index - instruction->difference < 0) {
+        fprintf(stderr, "error: tape memory out of bounds");
+        exit(EXIT_FAILURE);
+      }
+      context->tape_index -= instruction->difference;
+      break;
+    case BRAINFUCK_TOKEN_OUTPUT:
+      for (index = 0; index < instruction->difference; index++) {
+        // context->output_handler(context->tape[context->tape_index]);
+        printf("%c", context->tape[context->tape_index]);
+      }
+      break;
+    case BRAINFUCK_TOKEN_INPUT:
+      for (index = 0; index < instruction->difference; index++) {
+        char input = context->input_handler();
+        if (input == EOF) {
+          if (BRAINFUCK_EOF_BEHAVIOUR != 1) {
+            context->tape[context->tape_index] = BRAINFUCK_EOF_BEHAVIOUR;
+          }
+        } else {
+          context->tape[context->tape_index] = input;
+        }
+      }
+      break;
+    case BRAINFUCK_TOKEN_LOOP_START:
+      while (context->tape[context->tape_index]) {
+        brainfuck_execute(instruction->loop, context);
+      }
+      break;
+    default:
+      return;
+    }
+    instruction = instruction->next;
+    if (context->shouldStop == 1) {
+      instruction = NULL;
+      return;
+    }
+  }
+}
 char brainfuck_getchar() {
   char ch, t;
   ch = getchar();

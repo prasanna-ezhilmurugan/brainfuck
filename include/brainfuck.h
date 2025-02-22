@@ -41,6 +41,8 @@ typedef struct BrainfuckExecutionContext {
   int shouldStop;
 } BrainfuckExecutionContext;
 
+BrainfuckInstruction *brainfuck_instruction();
+
 BrainfuckState *brainfuck_state();
 
 BrainfuckExecutionContext *brainfuck_context(int);
@@ -65,6 +67,9 @@ void brainfuck_destroy_instruction(BrainfuckInstruction *instruction);
 void brainfuck_destroy_instructions(BrainfuckInstruction *root);
 void brainfuck_destroy_state(BrainfuckState *state);
 void brainfuck_destroy_context(BrainfuckExecutionContext *context);
+
+void brainfuck_execute(BrainfuckInstruction *root,
+                       BrainfuckExecutionContext *context);
 
 char brainfuck_getchar();
 #endif
