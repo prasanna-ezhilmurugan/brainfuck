@@ -4,10 +4,10 @@
 #include <brainfuck.h>
 
 void print_usage(char *name) {
-  fprintf(stderr, "Usage: %s -[evh] [file...]\n", name);
-  fprintf(stderr, "\t-e --eval\t\trun code directly\n");
-  fprintf(stderr, "\t-v --version\t\tshow the version information\n");
-  fprintf(stderr, "\t-h --help\t\tshow a help message\n");
+  fprintf(stdout, "Usage: %s -[evh] [file...]\n", name);
+  fprintf(stdout, "\t-e --eval\t\trun code directly\n");
+  fprintf(stdout, "\t-v --version\t\tshow the version information\n");
+  fprintf(stdout, "\t-h --help\t\tshow a help message\n");
 }
 
 int run_file(FILE *file) {
@@ -28,8 +28,8 @@ int run_file(FILE *file) {
 
 int main() {
   // printf("brainfuck");
-  print_usage("brianfuck");
-  if (run_file(fopen("./examples/text-generator.bf", "r")) == EXIT_FAILURE) {
+  // print_usage("brianfuck");
+  if (run_file(fopen("./examples/helloworld.bf", "r")) == EXIT_FAILURE) {
     fprintf(stderr, "error: failed to read file.");
     return EXIT_FAILURE;
   }

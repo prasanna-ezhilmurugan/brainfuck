@@ -41,6 +41,12 @@ typedef struct BrainfuckExecutionContext {
   int shouldStop;
 } BrainfuckExecutionContext;
 
+/*
+ * functions for print debugging purpose.
+ */
+void brainfuck_print_instruction(BrainfuckInstruction *instructions);
+void brainfuck_print_instructions(BrainfuckInstruction *root);
+
 BrainfuckInstruction *brainfuck_instruction();
 
 BrainfuckState *brainfuck_state();

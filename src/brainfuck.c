@@ -3,12 +3,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void brainfuck_print_instruction(BrainfuckInstruction *root) {
+void brainfuck_print_instructions(BrainfuckInstruction *root) {
   BrainfuckInstruction *iter = root;
   while (iter != NULL) {
     printf("%c , %d\n", iter->type, iter->difference);
     iter = iter->next;
   }
+}
+
+void brainfuck_print_instruction(BrainfuckInstruction *instruction) {
+  printf("%c , %d\n", instruction->type, instruction->difference);
 }
 
 BrainfuckInstruction *brainfuck_instruction() {
@@ -68,7 +72,6 @@ BrainfuckInstruction *brainfuck_add(BrainfuckState *state,
   if (state->root == NULL) {
     state->root = instruction;
   }
-  brainfuck_print_instruction(state->root);
   return state->head;
 }
 
@@ -83,8 +86,9 @@ BrainfuckInstruction *brainfuck_parse_stream_until(FILE *stream,
   char ch;
   char temp;
   while ((ch = fgetc(stream)) != until) {
-    if (ch == EOF || feof(stream))
+    if (ch == EOF || feof(stream)) {
       break;
+    }
     instruction->type = ch;
     instruction->difference = 1;
     switch (ch) {
@@ -146,12 +150,13 @@ void brainfuck_destroy_instruction(BrainfuckInstruction *instruction) {
 
 void brainfuck_destroy_instructions(BrainfuckInstruction *root) {
   BrainfuckInstruction *temp;
-  if (root != NULL) {
-    temp = root;
-    brainfuck_destroy_instruction(root->loop);
-    root = root->next;
-    brainfuck_destroy_instruction(temp);
+  if (root == NULL) {
+    return;
   }
+  temp = root;
+  brainfuck_destroy_instruction(root->loop);
+  root = root->next;
+  brainfuck_destroy_instruction(temp);
 }
 
 void brainfuck_destroy_state(BrainfuckState *state) {
@@ -182,7 +187,7 @@ void brainfuck_execute(BrainfuckInstruction *root,
   }
   BrainfuckInstruction *instruction = root;
   int index;
-  while (instruction != NULL && instruction->type == BRAINFUCK_TOKEN_LOOP_END) {
+  while (instruction != NULL && instruction->type != BRAINFUCK_TOKEN_LOOP_END) {
     switch (instruction->type) {
     case BRAINFUCK_TOKEN_PLUS:
       context->tape[context->tape_index] += instruction->difference;
@@ -209,8 +214,11 @@ void brainfuck_execute(BrainfuckInstruction *root,
       break;
     case BRAINFUCK_TOKEN_OUTPUT:
       for (index = 0; index < instruction->difference; index++) {
-        // context->output_handler(context->tape[context->tape_index]);
-        printf("%c", context->tape[context->tape_index]);
+        context->output_handler(context->tape[context->tape_index]);
+        /*
+         * Not flushing the stdout is the problem.
+         */
+        fflush(stdout);
       }
       break;
     case BRAINFUCK_TOKEN_INPUT:
@@ -240,6 +248,7 @@ void brainfuck_execute(BrainfuckInstruction *root,
     }
   }
 }
+
 char brainfuck_getchar() {
   char ch, t;
   ch = getchar();
