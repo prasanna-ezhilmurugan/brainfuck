@@ -52,6 +52,21 @@ BrainfuckExecutionContext *brainfuck_context(int size) {
   return context;
 }
 
+BrainfuckInstruction *brainfuck_remove(BrainfuckState *state,
+                                       BrainfuckInstruction *instruction) {
+  if (instruction == NULL || state == NULL) {
+    return NULL;
+  }
+  if (state->head == instruction) {
+    state->head->next = instruction->previous;
+  }
+  instruction->previous->next = instruction->next;
+  instruction->next->previous = instruction->previous;
+  instruction->previous = NULL;
+  instruction->next = NULL;
+  return instruction;
+}
+
 BrainfuckInstruction *brainfuck_add(BrainfuckState *state,
                                     BrainfuckInstruction *instruction) {
   if (state == NULL || instruction == NULL) {
@@ -72,6 +87,26 @@ BrainfuckInstruction *brainfuck_add(BrainfuckState *state,
   if (state->root == NULL) {
     state->root = instruction;
   }
+  return state->head;
+}
+
+BrainfuckInstruction *brainfuck_add_first(BrainfuckState *state,
+                                          BrainfuckInstruction *instruction) {
+  if (state == NULL || instruction == NULL) {
+    return NULL;
+  }
+  instruction->previous = NULL;
+  BrainfuckInstruction *iter = instruction;
+  while (iter != NULL) {
+    if (iter->next == NULL) {
+      state->head = iter;
+      break;
+    }
+    iter = iter->next;
+  }
+  iter->next = state->root;
+  state->root->previous = iter;
+  state->root = instruction;
   return state->head;
 }
 
@@ -150,13 +185,12 @@ void brainfuck_destroy_instruction(BrainfuckInstruction *instruction) {
 
 void brainfuck_destroy_instructions(BrainfuckInstruction *root) {
   BrainfuckInstruction *temp;
-  if (root == NULL) {
-    return;
+  while (root != NULL) {
+    temp = root;
+    brainfuck_destroy_instructions(root->loop);
+    root = root->next;
+    brainfuck_destroy_instruction(temp);
   }
-  temp = root;
-  brainfuck_destroy_instruction(root->loop);
-  root = root->next;
-  brainfuck_destroy_instruction(temp);
 }
 
 void brainfuck_destroy_state(BrainfuckState *state) {
@@ -215,10 +249,6 @@ void brainfuck_execute(BrainfuckInstruction *root,
     case BRAINFUCK_TOKEN_OUTPUT:
       for (index = 0; index < instruction->difference; index++) {
         context->output_handler(context->tape[context->tape_index]);
-        /*
-         * Not flushing the stdout is the problem.
-         */
-        fflush(stdout);
       }
       break;
     case BRAINFUCK_TOKEN_INPUT:
