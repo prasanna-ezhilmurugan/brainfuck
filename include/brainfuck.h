@@ -46,6 +46,7 @@ typedef struct BrainfuckExecutionContext {
  */
 void brainfuck_print_instruction(BrainfuckInstruction *instructions);
 void brainfuck_print_instructions(BrainfuckInstruction *root);
+void brainfuck_print_state(BrainfuckState *state);
 
 BrainfuckInstruction *brainfuck_instruction();
 

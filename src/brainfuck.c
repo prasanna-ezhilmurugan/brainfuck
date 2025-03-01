@@ -6,13 +6,19 @@
 void brainfuck_print_instructions(BrainfuckInstruction *root) {
   BrainfuckInstruction *iter = root;
   while (iter != NULL) {
-    printf("%c , %d\n", iter->type, iter->difference);
+    brainfuck_print_instruction(iter);
     iter = iter->next;
   }
 }
 
 void brainfuck_print_instruction(BrainfuckInstruction *instruction) {
   printf("%c , %d\n", instruction->type, instruction->difference);
+}
+
+void brainfuck_print_state(BrainfuckState *state) {
+  brainfuck_print_instructions(state->root);
+  printf("-------------------------head------------------");
+  brainfuck_print_instructions(state->head);
 }
 
 BrainfuckInstruction *brainfuck_instruction() {
@@ -176,7 +182,7 @@ BrainfuckInstruction *brainfuck_parse_stream_until(FILE *stream,
 }
 
 void brainfuck_destroy_instruction(BrainfuckInstruction *instruction) {
-  if (instruction != NULL) {
+  if (instruction == NULL) {
     return;
   }
   free(instruction);
