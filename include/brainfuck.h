@@ -70,6 +70,11 @@ BrainfuckInstruction *brainfuck_parse_stream(FILE *stream);
 BrainfuckInstruction *brainfuck_parse_stream_until(FILE *stream,
                                                    const int until);
 
+BrainfuckInstruction *brainfuck_parse_string(char *str);
+BrainfuckInstruction *brainfuck_parse_substring(char *str, int begin, int end);
+BrainfuckInstruction *brainfuck_parse_substring_incremental(char *str, int *ptr,
+                                                            int end);
+
 void brainfuck_destroy_instruction(BrainfuckInstruction *instruction);
 void brainfuck_destroy_instructions(BrainfuckInstruction *root);
 void brainfuck_destroy_state(BrainfuckState *state);

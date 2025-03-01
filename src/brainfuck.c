@@ -2,6 +2,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 void brainfuck_print_instructions(BrainfuckInstruction *root) {
   BrainfuckInstruction *iter = root;
@@ -174,6 +175,72 @@ BrainfuckInstruction *brainfuck_parse_stream_until(FILE *stream,
       continue;
     }
     instruction->next = brainfuck_instruction();
+    instruction = instruction->next;
+  }
+  instruction->type = BRAINFUCK_TOKEN_LOOP_END;
+  instruction->difference = 1;
+  return root;
+}
+
+BrainfuckInstruction *brainfuck_parse_string(char *str) {
+  return brainfuck_parse_substring(str, 0, -1);
+}
+
+BrainfuckInstruction *brainfuck_parse_substring(char *str, int begin, int end) {
+  int temp = begin;
+  return brainfuck_parse_substring_incremental(str, &temp, end);
+}
+
+BrainfuckInstruction *brainfuck_parse_substring_incremental(char *str, int *ptr,
+                                                            int end) {
+  if (str == NULL || ptr == NULL) {
+    return NULL;
+  }
+  if (end < 0) {
+    end = strlen(str);
+  }
+  BrainfuckInstruction *instruction = brainfuck_instruction();
+  BrainfuckInstruction *root = instruction;
+  char c = '0';
+  char temp_c = '0';
+  for (; *ptr < end && (c = str[*ptr]); (*ptr)++) {
+    instruction->type = c;
+    instruction->difference = 1;
+    switch (c) {
+    case BRAINFUCK_TOKEN_PLUS:
+    case BRAINFUCK_TOKEN_MINUS:
+      (*ptr)++;
+      for (;
+           *ptr < end && (temp_c = str[*ptr]) &&
+           (temp_c == BRAINFUCK_TOKEN_PLUS || temp_c == BRAINFUCK_TOKEN_MINUS);
+           (*ptr)++) {
+        if (temp_c == c) {
+          instruction->difference++;
+        } else {
+          instruction->difference--;
+        }
+      }
+      (*ptr)--;
+      break;
+    case BRAINFUCK_TOKEN_INPUT:
+    case BRAINFUCK_TOKEN_OUTPUT:
+      (*ptr)++;
+      for (; *ptr < end && (c == str[*ptr]); (*ptr)++) {
+        instruction->difference++;
+      }
+      (*ptr)--;
+      break;
+    case BRAINFUCK_TOKEN_LOOP_START:
+      (*ptr)++;
+      instruction->loop = brainfuck_parse_substring_incremental(str, ptr, end);
+      break;
+    case BRAINFUCK_TOKEN_LOOP_END:
+      return root;
+    default:
+      continue;
+    }
+    instruction->next = brainfuck_instruction();
+    instruction->next->previous = instruction;
     instruction = instruction->next;
   }
   instruction->type = BRAINFUCK_TOKEN_LOOP_END;
